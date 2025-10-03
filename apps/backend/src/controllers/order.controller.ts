@@ -74,17 +74,74 @@ export const getOrderById = async (req: Request & { user?: any }, res: Response)
     res.json(order);
 };
 
-export const updateOrderStatus = async (req: Request, res: Response) => {
+// src/controllers/order.controller.ts dagi updateOrderStatus funksiyasining YANGI VERSIYASI
+
+export const updateOrderStatus = async (req: Request & { user?: any }, res: Response) => {
+  try {
     const { id } = req.params;
-    const { status } = req.body;
-    if (!status || !Object.values(OrderStatus).includes(status)) {
-        return res.status(400).json({ error: "Status noto'g'ri" });
+    const { status: newStatus } = req.body;
+    const orderId = Number(id);
+    const user = req.user; // so'rov yuborayotgan foydalanuvchi
+
+    if (!newStatus || !Object.values(OrderStatus).includes(newStatus)) {
+      return res.status(400).json({ error: "Status noto'g'ri" });
     }
-    const updatedOrder = await prisma.order.update({
-        where: { id: Number(id) },
-        data: { status: status },
+
+    const orderToUpdate = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
     });
+
+    if (!orderToUpdate) {
+      return res.status(404).json({ error: "Buyurtma topilmadi" });
+    }
+    
+    // Foydalanuvchi o'z buyurtmasini o'zgartirmoqchi bo'lsa
+    if (user.role === 'CUSTOMER') {
+      // Agar o'zining buyurtmasi bo'lmasa, rad etamiz
+      if (orderToUpdate.userId !== user.id) {
+        return res.status(403).json({ error: "Bu sizning buyurtmangiz emas." });
+      }
+
+      // Agar status "NEW" bo'lsa, "CANCELLED" ga o'tkazishga ruxsat
+      if (orderToUpdate.status === 'NEW' && newStatus === 'CANCELLED') {
+        // Bu holatda mahsulot soni omborga qaytariladi (quyidagi tranzaksiyada)
+      } 
+      // Agar status "NEW" dan keyingi bosqichda bo'lsa, "RETURN_REQUESTED" ga o'tkazishga ruxsat
+      else if (['COLLECTING', 'AWAITING_COURIER', 'WITH_COURIER'].includes(orderToUpdate.status) && newStatus === 'CANCELLED') {
+        // Aslida foydalanuvchi "CANCELLED" so'rayapti, lekin biz uni "RETURN_REQUESTED"ga o'zgartiramiz
+        req.body.status = 'RETURN_REQUESTED'; 
+      }
+      else {
+        return res.status(403).json({ error: "Bu bosqichda buyurtmani bekor qila olmaysiz." });
+      }
+    }
+
+    // Tranzaksiya: statusni o'zgartirish va kerak bo'lsa, mahsulot sonini qaytarish
+    const finalStatus = req.body.status; // Yangilangan statusni olamiz
+    const updatedOrder = await prisma.$transaction(async (tx) => {
+      // Agar "YANGI" buyurtma bekor qilinsa, mahsulotlarni omborga qaytaramiz
+      if (finalStatus === 'CANCELLED' && orderToUpdate.status === 'NEW') {
+        for (const item of orderToUpdate.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
+      }
+
+      // Buyurtma statusini yangilaymiz
+      return tx.order.update({
+        where: { id: orderId },
+        data: { status: finalStatus },
+      });
+    });
+
     res.json(updatedOrder);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Buyurtma statusini yangilashda xatolik" });
+  }
 };
 
 export const deleteOrder = async (req: Request, res: Response) => {

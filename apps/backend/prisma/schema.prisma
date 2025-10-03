@@ -27,7 +27,9 @@ enum OrderStatus {
   AT_PICKUP_POINT
   OUT_FOR_DELIVERY
   DELIVERED
-  CANCELLED // Bekor qilingan statusni ham qo'shib qo'yish foydali
+  CANCELLED
+  RETURN_REQUESTED // <-- QO'SHILDI: Qaytarish so'rovi
+  RETURN_COMPLETED // <-- QO'SHILDI: Qaytarish yakunlandi
 }
 
 // ============== MODELLAR =================
@@ -61,20 +63,50 @@ model Category {
   products Product[]
 }
 
+// backend/prisma/schema.prisma ichidagi Product modeli
+
 model Product {
   id          Int      @id @default(autoincrement())
   name        String
-  description String?
-  price       Float
-  stock       Int      @default(0)
-  imageUrl    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  // ... (description, price, stock va hokazo eski maydonlar)
 
-  categoryId Int
-  category   Category @relation(fields: [categoryId], references: [id])
+  // === Mahsulotga xos Yetkazib Berish Sozlamalari ===
+  fulfillmentLeadTimeDays Int?      // Tayyorlash kuni (agar belgilanmasa, umumiy sozlamadan oladi)
+  orderCutoffTime         String?   // Buyurtma qabul qilish vaqti (agar belgilanmasa, umumiy sozlamadan oladi)
+  workingDays             Int[]     // Shu mahsulot uchun ish kunlari
+  holidayDates            DateTime[]// Shu mahsulot uchun dam olish kunlari
 
-  orderItems OrderItem[]
+  // ... (qolgan barcha maydonlar)
+  brand       String
+  countryOfOrigin String
+  // ... va hokazo
+
+  // -- QOLGAN BARCHA MAYDONLAR --
+  description       String
+  price             Float     
+  oldPrice          Float?    
+  stock             Int       @default(0) 
+  marketSku         String    @unique 
+  internalSku       String    @unique 
+  imageUrl          String?   
+  videoUrl          String?   
+  barcode           String?   
+  width             Int
+  height            Int
+  length            Int
+  weight            Int
+  shelfLifeMonths   Int?
+  shelfLifeComment  String?
+  ageRestriction    Int?      @default(0) 
+  isAdult           Boolean   @default(false)
+  color             String?
+  size              String?
+  attributes        Json?     
+  categoryId        Int
+  category          Category  @relation(fields: [categoryId], references: [id])
+  orderItems        OrderItem[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
 // 🛒 Buyurtma Modeli
 model Order {
@@ -101,4 +133,13 @@ model OrderItem {
 
   productId Int
   product   Product @relation(fields: [productId], references: [id])
+}
+// Umumiy do'kon sozlamalari uchun yangi model
+model StoreSetting {
+  id                      Int      @id @default(1) // Bu jadvalda har doim faqat bitta yozuv bo'ladi
+  shipmentVolume          Int      @default(10) // Jo'natma hajmi
+  fulfillmentLeadTimeDays Int      @default(1)  // Umumiy yetkazishga tayyorlash kuni
+  orderCutoffTime         String   @default("09:00") // Umumiy buyurtma qabul qilish vaqti
+  workingDays             Int[]    @default([1, 2, 3, 4, 5]) // Standart ish kunlari (Dushanba-Juma)
+  holidayDates            DateTime[]
 }

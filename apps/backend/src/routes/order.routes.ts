@@ -11,6 +11,6 @@ router.get('/', authMiddleware, getAllOrders);
 router.post('/', authMiddleware, createOrder);
 router.get('/:id', authMiddleware, getOrderById);
 router.delete('/:id', authMiddleware, adminMiddleware, deleteOrder);
-router.put('/:id/status', authMiddleware, adminMiddleware, updateOrderStatus);
+router.put('/:id/status', authMiddleware, updateOrderStatus);
 
 export default router;

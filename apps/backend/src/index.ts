@@ -2,6 +2,7 @@
 
 import express from "express";
 import cors from "cors";
+import settingsRoutes from './routes/settings.routes';
 
 // Barcha marshrutlarni import qilamiz
 import authRoutes from './routes/auth.routes';
@@ -27,7 +28,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
-
+app.use('/api/settings', settingsRoutes); // <-- SHU QATORNI QO'SHING
 // Serverni ishga tushirish
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

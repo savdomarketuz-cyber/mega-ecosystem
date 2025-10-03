@@ -1,7 +1,7 @@
-// frontend/src/pages/OrdersPage.tsx (YAKUNIY, TO'G'RI KOD)
+// frontend/src/pages/OrdersPage.tsx (YAKUNIY, LINK BILAN TO'G'RILANGAN)
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { List, Typography, Spin, Alert, Tag, Card } from 'antd';
 
@@ -28,6 +28,7 @@ const OrdersPage = () => {
         return;
       }
       try {
+        setLoading(true);
         const response = await axios.get('http://localhost:3001/api/orders', {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -48,6 +49,8 @@ const OrdersPage = () => {
       case 'COLLECTING': return 'processing';
       case 'DELIVERED': return 'success';
       case 'CANCELLED': return 'error';
+      case 'RETURN_REQUESTED': return 'warning';
+      case 'RETURN_COMPLETED': return 'lime';
       default: return 'default';
     }
   };
@@ -66,20 +69,23 @@ const OrdersPage = () => {
         dataSource={orders}
         renderItem={(order) => (
           <List.Item>
-            <Card style={{ width: '100%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <Text strong>Buyurtma #{order.id}</Text><br />
-                  <Text type="secondary">Sana: {new Date(order.createdAt).toLocaleDateString()}</Text>
+            {/* HAR BIR KARTANI LINK BILAN O'RAYMIZ */}
+            <Link to={`/orders/${order.id}`} style={{ width: '100%' }}>
+              <Card hoverable style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <Text strong>Buyurtma #{order.id}</Text><br />
+                    <Text type="secondary">Sana: {new Date(order.createdAt).toLocaleDateString()}</Text>
+                  </div>
+                  <div>
+                    <Tag color={getStatusColor(order.status)}>{order.status}</Tag>
+                  </div>
+                  <div>
+                    <Text strong>{order.totalPrice.toLocaleString()} so'm</Text>
+                  </div>
                 </div>
-                <div>
-                  <Tag color={getStatusColor(order.status)}>{order.status}</Tag>
-                </div>
-                <div>
-                  <Text strong>{order.totalPrice.toLocaleString()} so'm</Text>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            </Link>
           </List.Item>
         )}
       />
