@@ -13,7 +13,7 @@ import orderRoutes from './routes/order.routes';
 import adminRoutes from './routes/admin.routes';
 
 const app = express();
-
+console.log(">>>>> ISHLATILAYOTGAN BAZA MANZILI:", process.env.DATABASE_URL);
 // Asosiy middleware'lar
 app.use(express.json());
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));

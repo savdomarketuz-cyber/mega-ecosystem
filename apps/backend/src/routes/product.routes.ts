@@ -1,4 +1,4 @@
-// src/routes/product.routes.ts (TO'G'RI VA TO'LIQ KOD)
+// src/routes/product.routes.ts (YAKUNIY, TO'LIQ KOD)
 
 import { Router } from 'express';
 import { 
@@ -7,19 +7,24 @@ import {
     createProduct, 
     updateProduct, 
     deleteProduct,
-    bulkUpdateProducts // <-- Import qo'shildi
+    bulkUpdateProducts,
+    getProductDeliveryEstimate // <-- YANGI IMPORT QO'SHILDI
 } from '../controllers/product.controller';
 import { authMiddleware, adminMiddleware } from '../middleware/auth';
 
-const router = Router(); // <-- E'lon qilish ishlatishdan oldin bo'lishi kerak
+const router = Router();
 
 // Barcha uchun ochiq marshrutlar
 router.get('/', getAllProducts);
+
+// Muhim: Aniqroq marshrutlar umumiyroq marshrutlardan oldin turishi kerak
+router.get('/:id/delivery-estimate', getProductDeliveryEstimate); // <-- YANGI MARSHRUT QO'SHILDI
 router.get('/:id', getProductById);
+
 
 // Faqat admin uchun yopiq marshrutlar
 router.post('/', authMiddleware, adminMiddleware, createProduct);
-router.put('/bulk-update/fulfillment', authMiddleware, adminMiddleware, bulkUpdateProducts); // <-- Yangi marshrut
+router.put('/bulk-update/fulfillment', authMiddleware, adminMiddleware, bulkUpdateProducts);
 router.put('/:id', authMiddleware, adminMiddleware, updateProduct);
 router.delete('/:id', authMiddleware, adminMiddleware, deleteProduct);
 
